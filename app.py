@@ -1,3 +1,4 @@
+```python
 # ============================================
 # IMPORT LIBRARIES
 # ============================================
@@ -5,9 +6,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 
 # ============================================
 # PAGE CONFIG
@@ -125,75 +123,6 @@ if uploaded_file is not None:
             df['Loan Outstanding Amount'] = 0
 
         # ============================================
-        # ML RISK SCORE
-        # ============================================
-
-        df['Risk Score'] = (
-
-            (df['Sum Assured'] / 100000)
-
-            +
-
-            (pd.to_numeric(
-
-                df['Loan Outstanding Amount'],
-
-                errors='coerce'
-
-            ).fillna(0) / 100000)
-
-        )
-
-        # ============================================
-        # ML FEATURES
-        # ============================================
-
-        X = df[[
-
-            'Sum Assured',
-
-            'Loan Outstanding Amount'
-
-        ]]
-
-        y = df['Risk Score']
-
-        # ============================================
-        # TRAIN TEST SPLIT
-        # ============================================
-
-        X_train, X_test, y_train, y_test = train_test_split(
-
-            X,
-
-            y,
-
-            test_size=0.2,
-
-            random_state=42
-
-        )
-
-        # ============================================
-        # TRAIN MODEL
-        # ============================================
-
-        model = RandomForestRegressor(
-            random_state=42
-        )
-
-        model.fit(
-            X_train,
-            y_train
-        )
-
-        # ============================================
-        # PREDICT RISK
-        # ============================================
-
-        df['Predicted Risk'] = model.predict(X)
-
-        # ============================================
         # PREMIUM CALCULATION
         # ============================================
 
@@ -236,8 +165,6 @@ if uploaded_file is not None:
             'MAIN MEMBER AGE',
 
             'Sum Assured',
-
-            'Predicted Risk',
 
             'Premium Excl GST',
 
@@ -310,3 +237,4 @@ if uploaded_file is not None:
     except Exception as e:
 
         st.error(f"Error: {e}")
+```
