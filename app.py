@@ -33,7 +33,7 @@ st.markdown(
 # SETTINGS
 # ============================================
 
-RATE_PER_LAKH = 320.3
+RATE_PER_LAKH = 650
 
 GST_RATE = 0.18
 
