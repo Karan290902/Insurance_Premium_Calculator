@@ -5,6 +5,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import io  # Added for memory-safe Excel exports
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
@@ -33,7 +34,8 @@ st.markdown(
 # SETTINGS
 # ============================================
 
-RATE_PER_LAKH = 320.3
+# UPDATED: Changed calculation rate from 320.3 to 767
+RATE_PER_LAKH = 767.0
 
 GST_RATE = 0.18
 
@@ -79,21 +81,14 @@ if uploaded_file is not None:
         # ============================================
 
         required_columns = [
-
             'Loan Account No.',
-
             'Name of Primary Loan borrower',
-
             'Mobile No',
-
             'Sum Assured'
-
         ]
 
         for col in required_columns:
-
             if col not in df.columns:
-
                 df[col] = ""
 
         # ============================================
@@ -101,11 +96,8 @@ if uploaded_file is not None:
         # ============================================
 
         df['Sum Assured'] = pd.to_numeric(
-
             df['Sum Assured'],
-
             errors='coerce'
-
         ).fillna(0)
 
         # ============================================
@@ -113,7 +105,6 @@ if uploaded_file is not None:
         # ============================================
 
         if 'MAIN MEMBER AGE' not in df.columns:
-
             df['MAIN MEMBER AGE'] = 0
 
         # ============================================
@@ -121,7 +112,6 @@ if uploaded_file is not None:
         # ============================================
 
         if 'Loan Outstanding Amount' not in df.columns:
-
             df['Loan Outstanding Amount'] = 0
 
         # ============================================
@@ -129,19 +119,12 @@ if uploaded_file is not None:
         # ============================================
 
         df['Risk Score'] = (
-
             (df['Sum Assured'] / 100000)
-
             +
-
             (pd.to_numeric(
-
                 df['Loan Outstanding Amount'],
-
                 errors='coerce'
-
             ).fillna(0) / 100000)
-
         )
 
         # ============================================
@@ -149,11 +132,8 @@ if uploaded_file is not None:
         # ============================================
 
         X = df[[
-
             'Sum Assured',
-
             'Loan Outstanding Amount'
-
         ]]
 
         y = df['Risk Score']
@@ -163,15 +143,10 @@ if uploaded_file is not None:
         # ============================================
 
         X_train, X_test, y_train, y_test = train_test_split(
-
             X,
-
             y,
-
             test_size=0.2,
-
             random_state=42
-
         )
 
         # ============================================
@@ -198,13 +173,9 @@ if uploaded_file is not None:
         # ============================================
 
         df['Premium Excl GST'] = (
-
             (df['Sum Assured'] / 100000)
-
             *
-
             RATE_PER_LAKH
-
         )
 
         # ============================================
@@ -212,13 +183,9 @@ if uploaded_file is not None:
         # ============================================
 
         df['Premium + GST'] = (
-
             df['Premium Excl GST']
-
             +
-
             (df['Premium Excl GST'] * GST_RATE)
-
         )
 
         # ============================================
@@ -226,23 +193,14 @@ if uploaded_file is not None:
         # ============================================
 
         output_columns = [
-
             'Loan Account No.',
-
             'Name of Primary Loan borrower',
-
             'Mobile No',
-
             'MAIN MEMBER AGE',
-
             'Sum Assured',
-
             'Predicted Risk',
-
             'Premium Excl GST',
-
             'Premium + GST'
-
         ]
 
         final_df = df[output_columns]
@@ -256,21 +214,18 @@ if uploaded_file is not None:
         col1, col2, col3 = st.columns(3)
 
         with col1:
-
             st.metric(
                 "Total Members",
                 len(final_df)
             )
 
         with col2:
-
             st.metric(
                 "Total Sum Assured",
                 f"₹ {final_df['Sum Assured'].sum():,.0f}"
             )
 
         with col3:
-
             st.metric(
                 "Total Premium",
                 f"₹ {final_df['Premium + GST'].sum():,.2f}"
@@ -288,24 +243,24 @@ if uploaded_file is not None:
         )
 
         # ============================================
-        # DOWNLOAD BUTTON
+        # DOWNLOAD BUTTON (Memory-Safe Fix)
         # ============================================
+        
+        # We use BytesIO so multiple app visitors can export files 
+        # at the same time without hitting server storage errors.
+        buffer = io.BytesIO()
+        
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            final_df.to_excel(writer, index=False, sheet_name='Premium Summary')
+            
+        buffer.seek(0)
 
-        output_file = "Premium_Output.xlsx"
-
-        final_df.to_excel(
-            output_file,
-            index=False
+        st.download_button(
+            label="⬇ Download Output Excel",
+            data=buffer,
+            file_name="Premium_Output.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
-        with open(output_file, "rb") as file:
-
-            st.download_button(
-                label="⬇ Download Output Excel",
-                data=file,
-                file_name=output_file,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
 
     except Exception as e:
 
